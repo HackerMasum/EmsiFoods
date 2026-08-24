@@ -1,32 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders/order.service";
+import type { CheckoutInput } from "@/modules/orders/order.types";
 
-// GET /api/orders
-// GET /api/orders?userId=xxx
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const userId = searchParams.get("userId") || undefined;
+    const userId = searchParams.get("userId");
 
-    const orders = await orderService.getOrders(userId);
+    if (!userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User ID is required",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: orders,
-    });
+    const orders =
+      await orderService.getOrdersByUserId(userId);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: orders,
+      },
+      {
+        status: 200,
+      }
+    );
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
-        : "Something went wrong";
+        : "Failed to fetch orders";
 
     return NextResponse.json(
       {
         success: false,
         message,
       },
-      { status: 400 }
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body =
+      (await request.json()) as CheckoutInput;
+
+    const order =
+      await orderService.checkout(body);
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Order created successfully",
+        data: order,
+      },
+      {
+        status: 201,
+      }
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create order";
+
+    return NextResponse.json(
+      {
+        success: false,
+        message,
+      },
+      {
+        status: 400,
+      }
     );
   }
 }
