@@ -48,13 +48,10 @@ export const orderRepository = {
           subtotal: data.subtotal,
           discount: data.discount,
           total: data.total,
-
           couponCode: data.couponCode,
-
           customerName: data.customerName,
           phone: data.phone,
           address: data.address,
-
           userId: data.userId,
 
           items: {
@@ -199,7 +196,6 @@ export const orderRepository = {
         },
         include: {
           items: true,
-          payment: true,
         },
       });
 
@@ -224,7 +220,7 @@ export const orderRepository = {
         });
       }
 
-      const updatedOrder = await tx.order.update({
+      return tx.order.update({
         where: {
           id: orderId,
         },
@@ -240,8 +236,6 @@ export const orderRepository = {
           payment: true,
         },
       });
-
-      return updatedOrder;
     });
   },
 };

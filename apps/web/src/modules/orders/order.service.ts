@@ -55,9 +55,10 @@ export const orderService = {
 
     // 4. Apply coupon if provided
     if (data.couponCode) {
-      const coupon = await orderRepository.findCouponByCode(
-        data.couponCode
-      );
+      const coupon =
+        await orderRepository.findCouponByCode(
+          data.couponCode
+        );
 
       if (!coupon) {
         throw new Error("Invalid coupon");
@@ -78,7 +79,9 @@ export const orderService = {
         coupon.maxUses !== null &&
         coupon.usedCount >= coupon.maxUses
       ) {
-        throw new Error("Coupon usage limit reached");
+        throw new Error(
+          "Coupon usage limit reached"
+        );
       }
 
       if (
@@ -98,6 +101,7 @@ export const orderService = {
         discount = Number(coupon.value);
       }
 
+      // Prevent discount from exceeding subtotal
       discount = Math.min(discount, subtotal);
 
       validCouponCode = coupon.code;
@@ -132,15 +136,9 @@ export const orderService = {
   },
 
   async getOrdersByUserId(userId: string) {
-    return orderRepository.getOrdersByUserId(userId);
-  },
-
-  async getOrders(userId?: string) {
-    if (userId) {
-      return orderRepository.getOrdersByUserId(userId);
-    }
-
-    return orderRepository.getAllOrders();
+    return orderRepository.getOrdersByUserId(
+      userId
+    );
   },
 
   async getOrderById(orderId: string) {
@@ -158,7 +156,12 @@ export const orderService = {
     orderId: string,
     newStatus: OrderStatus
   ) {
-    const order = await this.getOrderById(orderId);
+    const order =
+      await orderRepository.getOrderById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
 
     const currentStatus =
       order.status as OrderStatus;
@@ -178,7 +181,7 @@ export const orderService = {
       );
     }
 
-    // Use the special cancellation flow
+    // Use cancellation transaction so stock is restored
     if (newStatus === "CANCELLED") {
       return orderRepository.cancelOrder(orderId);
     }
