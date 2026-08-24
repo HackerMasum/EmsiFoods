@@ -18,3 +18,10 @@ export type OrderStatus =
 export type UpdateOrderStatusInput = {
   status: OrderStatus;
 };
+
+export type GetOrdersQuery = {
+  status?: OrderStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+};

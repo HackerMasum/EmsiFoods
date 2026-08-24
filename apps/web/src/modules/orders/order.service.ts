@@ -1,6 +1,7 @@
 import { orderRepository } from "./order.repository";
 import type {
   CheckoutInput,
+  GetOrdersQuery,
   OrderStatus,
 } from "./order.types";
 
@@ -18,7 +19,6 @@ const allowedStatusTransitions: Record<
 
 export const orderService = {
   async checkout(data: CheckoutInput) {
-    // 1. Find the user's cart
     const cart = await orderRepository.findCartByUserId(
       data.userId
     );
@@ -27,7 +27,6 @@ export const orderService = {
       throw new Error("Cart is empty");
     }
 
-    // 2. Validate products and stock
     for (const item of cart.items) {
       if (!item.product.isActive) {
         throw new Error(
@@ -42,7 +41,6 @@ export const orderService = {
       }
     }
 
-    // 3. Calculate subtotal
     const subtotal = cart.items.reduce(
       (total, item) =>
         total +
@@ -53,7 +51,6 @@ export const orderService = {
     let discount = 0;
     let validCouponCode: string | undefined;
 
-    // 4. Apply coupon if provided
     if (data.couponCode) {
       const coupon =
         await orderRepository.findCouponByCode(
@@ -101,20 +98,14 @@ export const orderService = {
         discount = Number(coupon.value);
       }
 
-      // Prevent discount from exceeding subtotal
       discount = Math.min(discount, subtotal);
-
       validCouponCode = coupon.code;
     }
 
-    // 5. Calculate final total
     const total = subtotal - discount;
-
-    // 6. Generate order number
     const orderNumber = `EMSI-${Date.now()}`;
 
-    // 7. Atomic checkout transaction
-    const order = await orderRepository.checkout(
+    return orderRepository.checkout(
       cart.id,
       {
         ...data,
@@ -131,14 +122,16 @@ export const orderService = {
       },
       validCouponCode
     );
-
-    return order;
   },
 
   async getOrdersByUserId(userId: string) {
     return orderRepository.getOrdersByUserId(
       userId
     );
+  },
+
+  async getAllOrders(query: GetOrdersQuery = {}) {
+    return orderRepository.getAllOrders(query);
   },
 
   async getOrderById(orderId: string) {
@@ -181,7 +174,6 @@ export const orderService = {
       );
     }
 
-    // Use cancellation transaction so stock is restored
     if (newStatus === "CANCELLED") {
       return orderRepository.cancelOrder(orderId);
     }

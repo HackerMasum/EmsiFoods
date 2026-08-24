@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type {
   CheckoutInput,
+  GetOrdersQuery,
   OrderStatus,
 } from "./order.types";
 
@@ -150,20 +151,77 @@ export const orderRepository = {
     });
   },
 
-  async getAllOrders() {
-    return prisma.order.findMany({
-      include: {
-        items: {
-          include: {
-            product: true,
+  async getAllOrders(query: GetOrdersQuery = {}) {
+    const {
+      status,
+      search,
+      page = 1,
+      limit = 10,
+    } = query;
+
+    const skip = (page - 1) * limit;
+
+    const where = {
+      ...(status
+        ? {
+            status,
+          }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                orderNumber: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                customerName: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                phone: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [orders, total] = await prisma.$transaction([
+      prisma.order.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
           },
+          payment: true,
         },
-        payment: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({
+        where,
+      }),
+    ]);
+
+    return {
+      orders,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   },
 
   async updateOrderStatus(
