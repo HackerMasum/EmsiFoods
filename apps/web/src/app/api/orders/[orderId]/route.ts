@@ -1,7 +1,6 @@
-```ts
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders/order.service";
-import type { OrderStatus } from "@/modules/orders/order.types";
+import type { UpdateOrderStatusInput } from "@/modules/orders/order.types";
 
 type RouteContext = {
   params: Promise<{
@@ -47,9 +46,8 @@ export async function PATCH(
   try {
     const { orderId } = await context.params;
 
-    const body = (await request.json()) as {
-      status?: OrderStatus;
-    };
+    const body =
+      (await request.json()) as UpdateOrderStatusInput;
 
     if (!body.status) {
       return NextResponse.json(
@@ -86,4 +84,3 @@ export async function PATCH(
     );
   }
 }
-```
