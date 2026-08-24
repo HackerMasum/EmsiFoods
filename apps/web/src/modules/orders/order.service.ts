@@ -1,16 +1,19 @@
 import { orderRepository } from "./order.repository";
-import type { CheckoutInput } from "./order.types";
+import type {
+  CheckoutInput,
+  UpdateOrderStatusInput,
+} from "./order.types";
 
 export const orderService = {
   async checkout(data: CheckoutInput) {
-    // 1. Find the user's cart
-    const cart = await orderRepository.findCartByUserId(data.userId);
+    const cart = await orderRepository.findCartByUserId(
+      data.userId
+    );
 
     if (!cart || cart.items.length === 0) {
       throw new Error("Cart is empty");
     }
 
-    // 2. Validate products and stock
     for (const item of cart.items) {
       if (!item.product.isActive) {
         throw new Error(
@@ -25,7 +28,6 @@ export const orderService = {
       }
     }
 
-    // 3. Calculate subtotal
     const subtotal = cart.items.reduce(
       (total, item) =>
         total + Number(item.product.price) * item.quantity,
@@ -35,7 +37,6 @@ export const orderService = {
     let discount = 0;
     let validCouponCode: string | undefined;
 
-    // 4. Apply coupon if provided
     if (data.couponCode) {
       const coupon = await orderRepository.findCouponByCode(
         data.couponCode
@@ -49,7 +50,10 @@ export const orderService = {
         throw new Error("Coupon is not active");
       }
 
-      if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+      if (
+        coupon.expiresAt &&
+        coupon.expiresAt < new Date()
+      ) {
         throw new Error("Coupon has expired");
       }
 
@@ -76,19 +80,15 @@ export const orderService = {
         discount = Number(coupon.value);
       }
 
-      // Prevent discount from exceeding subtotal
       discount = Math.min(discount, subtotal);
 
       validCouponCode = coupon.code;
     }
 
-    // 5. Calculate final total
     const total = subtotal - discount;
 
-    // 6. Generate order number
     const orderNumber = `EMSI-${Date.now()}`;
 
-    // 7. Atomic checkout transaction
     const order = await orderRepository.checkout(
       cart.id,
       {
@@ -108,5 +108,37 @@ export const orderService = {
     );
 
     return order;
+  },
+
+  async getOrderById(orderId: string) {
+    const order = await orderRepository.getOrderById(
+      orderId
+    );
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    return order;
+  },
+
+  async getOrders(userId?: string) {
+    if (userId) {
+      return orderRepository.getOrdersByUserId(userId);
+    }
+
+    return orderRepository.getAllOrders();
+  },
+
+  async updateOrderStatus(
+    orderId: string,
+    data: UpdateOrderStatusInput
+  ) {
+    await this.getOrderById(orderId);
+
+    return orderRepository.updateOrderStatus(
+      orderId,
+      data.status
+    );
   },
 };

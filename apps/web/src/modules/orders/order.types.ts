@@ -6,3 +6,13 @@ export type CheckoutInput = {
   couponCode?: string;
   paymentMethod?: string;
 };
+
+export type UpdateOrderStatusInput = {
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "PROCESSING"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "CANCELLED";
+};

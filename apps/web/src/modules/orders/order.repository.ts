@@ -39,7 +39,6 @@ export const orderRepository = {
     couponCode?: string
   ) {
     return prisma.$transaction(async (tx) => {
-      // Create order, order items, and payment
       const order = await tx.order.create({
         data: {
           orderNumber: data.orderNumber,
@@ -80,7 +79,6 @@ export const orderRepository = {
         },
       });
 
-      // Reduce product stock
       for (const item of data.items) {
         await tx.product.update({
           where: {
@@ -94,7 +92,6 @@ export const orderRepository = {
         });
       }
 
-      // Increment coupon usage
       if (couponCode) {
         await tx.coupon.update({
           where: {
@@ -108,7 +105,6 @@ export const orderRepository = {
         });
       }
 
-      // Clear the cart
       await tx.cartItem.deleteMany({
         where: {
           cartId,
@@ -116,6 +112,85 @@ export const orderRepository = {
       });
 
       return order;
+    });
+  },
+
+  async getOrderById(orderId: string) {
+    return prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        payment: true,
+      },
+    });
+  },
+
+  async getOrdersByUserId(userId: string) {
+    return prisma.order.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        payment: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  },
+
+  async getAllOrders() {
+    return prisma.order.findMany({
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        payment: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  },
+
+  async updateOrderStatus(
+    orderId: string,
+    status:
+      | "PENDING"
+      | "CONFIRMED"
+      | "PROCESSING"
+      | "SHIPPED"
+      | "DELIVERED"
+      | "CANCELLED"
+  ) {
+    return prisma.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        payment: true,
+      },
     });
   },
 };
