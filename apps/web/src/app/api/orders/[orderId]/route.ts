@@ -1,6 +1,7 @@
+```ts
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders/order.service";
-import type { UpdateOrderStatusInput } from "@/modules/orders/order.types";
+import type { OrderStatus } from "@/modules/orders/order.types";
 
 type RouteContext = {
   params: Promise<{
@@ -16,9 +17,7 @@ export async function GET(
   try {
     const { orderId } = await context.params;
 
-    const order = await orderService.getOrderById(
-      orderId
-    );
+    const order = await orderService.getOrderById(orderId);
 
     return NextResponse.json({
       success: true,
@@ -48,8 +47,9 @@ export async function PATCH(
   try {
     const { orderId } = await context.params;
 
-    const body =
-      (await request.json()) as UpdateOrderStatusInput;
+    const body = (await request.json()) as {
+      status?: OrderStatus;
+    };
 
     if (!body.status) {
       return NextResponse.json(
@@ -63,9 +63,7 @@ export async function PATCH(
 
     const order = await orderService.updateOrderStatus(
       orderId,
-      {
-        status: body.status,
-      }
+      body.status
     );
 
     return NextResponse.json({
@@ -88,3 +86,4 @@ export async function PATCH(
     );
   }
 }
+```
