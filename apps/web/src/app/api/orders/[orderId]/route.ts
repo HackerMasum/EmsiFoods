@@ -16,7 +16,9 @@ export async function GET(
   try {
     const { orderId } = await context.params;
 
-    const order = await orderService.getOrderById(orderId);
+    const order = await orderService.getOrderById(
+      orderId
+    );
 
     return NextResponse.json({
       success: true,

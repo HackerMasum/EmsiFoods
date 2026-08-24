@@ -1,11 +1,33 @@
 import { orderRepository } from "./order.repository";
 import type {
   CheckoutInput,
+  OrderStatus,
   UpdateOrderStatusInput,
 } from "./order.types";
 
+const allowedStatusTransitions: Record<
+  OrderStatus,
+  OrderStatus[]
+> = {
+  PENDING: ["CONFIRMED", "CANCELLED"],
+
+  CONFIRMED: [
+    "PROCESSING",
+    "CANCELLED",
+  ],
+
+  PROCESSING: ["SHIPPED"],
+
+  SHIPPED: ["DELIVERED"],
+
+  DELIVERED: [],
+
+  CANCELLED: [],
+};
+
 export const orderService = {
   async checkout(data: CheckoutInput) {
+    // 1. Find the user's cart
     const cart = await orderRepository.findCartByUserId(
       data.userId
     );
@@ -14,6 +36,7 @@ export const orderService = {
       throw new Error("Cart is empty");
     }
 
+    // 2. Validate products and stock
     for (const item of cart.items) {
       if (!item.product.isActive) {
         throw new Error(
@@ -28,15 +51,18 @@ export const orderService = {
       }
     }
 
+    // 3. Calculate subtotal
     const subtotal = cart.items.reduce(
       (total, item) =>
-        total + Number(item.product.price) * item.quantity,
+        total +
+        Number(item.product.price) * item.quantity,
       0
     );
 
     let discount = 0;
     let validCouponCode: string | undefined;
 
+    // 4. Apply coupon if provided
     if (data.couponCode) {
       const coupon = await orderRepository.findCouponByCode(
         data.couponCode
@@ -61,7 +87,9 @@ export const orderService = {
         coupon.maxUses !== null &&
         coupon.usedCount >= coupon.maxUses
       ) {
-        throw new Error("Coupon usage limit reached");
+        throw new Error(
+          "Coupon usage limit reached"
+        );
       }
 
       if (
@@ -75,20 +103,25 @@ export const orderService = {
 
       if (coupon.type === "PERCENTAGE") {
         discount =
-          subtotal * (Number(coupon.value) / 100);
+          subtotal *
+          (Number(coupon.value) / 100);
       } else {
         discount = Number(coupon.value);
       }
 
+      // Prevent discount from exceeding subtotal
       discount = Math.min(discount, subtotal);
 
       validCouponCode = coupon.code;
     }
 
+    // 5. Calculate final total
     const total = subtotal - discount;
 
+    // 6. Generate order number
     const orderNumber = `EMSI-${Date.now()}`;
 
+    // 7. Atomic checkout transaction
     const order = await orderRepository.checkout(
       cart.id,
       {
@@ -110,10 +143,25 @@ export const orderService = {
     return order;
   },
 
-  async getOrderById(orderId: string) {
-    const order = await orderRepository.getOrderById(
-      orderId
+  async getOrders(userId?: string) {
+    if (userId) {
+      return orderRepository.getOrdersByUserId(
+        userId
+      );
+    }
+
+    return orderRepository.getAllOrders();
+  },
+
+  async getOrdersByUserId(userId: string) {
+    return orderRepository.getOrdersByUserId(
+      userId
     );
+  },
+
+  async getOrderById(orderId: string) {
+    const order =
+      await orderRepository.getOrderById(orderId);
 
     if (!order) {
       throw new Error("Order not found");
@@ -122,23 +170,42 @@ export const orderService = {
     return order;
   },
 
-  async getOrders(userId?: string) {
-    if (userId) {
-      return orderRepository.getOrdersByUserId(userId);
-    }
-
-    return orderRepository.getAllOrders();
-  },
-
   async updateOrderStatus(
     orderId: string,
     data: UpdateOrderStatusInput
   ) {
-    await this.getOrderById(orderId);
+    const order =
+      await orderRepository.getOrderById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    const currentStatus =
+      order.status as OrderStatus;
+
+    const newStatus = data.status;
+
+    // Prevent updating to the same status
+    if (currentStatus === newStatus) {
+      throw new Error(
+        `Order is already ${newStatus}`
+      );
+    }
+
+    // Check whether the transition is allowed
+    const allowedTransitions =
+      allowedStatusTransitions[currentStatus];
+
+    if (!allowedTransitions.includes(newStatus)) {
+      throw new Error(
+        `Cannot change order status from ${currentStatus} to ${newStatus}`
+      );
+    }
 
     return orderRepository.updateOrderStatus(
       orderId,
-      data.status
+      newStatus
     );
   },
 };

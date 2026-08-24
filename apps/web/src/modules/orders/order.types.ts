@@ -7,12 +7,14 @@ export type CheckoutInput = {
   paymentMethod?: string;
 };
 
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
 export type UpdateOrderStatusInput = {
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "PROCESSING"
-    | "SHIPPED"
-    | "DELIVERED"
-    | "CANCELLED";
+  status: OrderStatus;
 };
