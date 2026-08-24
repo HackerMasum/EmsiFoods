@@ -2,7 +2,6 @@ import { orderRepository } from "./order.repository";
 import type {
   CheckoutInput,
   OrderStatus,
-  UpdateOrderStatusInput,
 } from "./order.types";
 
 const allowedStatusTransitions: Record<
@@ -10,18 +9,10 @@ const allowedStatusTransitions: Record<
   OrderStatus[]
 > = {
   PENDING: ["CONFIRMED", "CANCELLED"],
-
-  CONFIRMED: [
-    "PROCESSING",
-    "CANCELLED",
-  ],
-
+  CONFIRMED: ["PROCESSING", "CANCELLED"],
   PROCESSING: ["SHIPPED"],
-
   SHIPPED: ["DELIVERED"],
-
   DELIVERED: [],
-
   CANCELLED: [],
 };
 
@@ -87,9 +78,7 @@ export const orderService = {
         coupon.maxUses !== null &&
         coupon.usedCount >= coupon.maxUses
       ) {
-        throw new Error(
-          "Coupon usage limit reached"
-        );
+        throw new Error("Coupon usage limit reached");
       }
 
       if (
@@ -109,7 +98,6 @@ export const orderService = {
         discount = Number(coupon.value);
       }
 
-      // Prevent discount from exceeding subtotal
       discount = Math.min(discount, subtotal);
 
       validCouponCode = coupon.code;
@@ -143,20 +131,16 @@ export const orderService = {
     return order;
   },
 
+  async getOrdersByUserId(userId: string) {
+    return orderRepository.getOrdersByUserId(userId);
+  },
+
   async getOrders(userId?: string) {
     if (userId) {
-      return orderRepository.getOrdersByUserId(
-        userId
-      );
+      return orderRepository.getOrdersByUserId(userId);
     }
 
     return orderRepository.getAllOrders();
-  },
-
-  async getOrdersByUserId(userId: string) {
-    return orderRepository.getOrdersByUserId(
-      userId
-    );
   },
 
   async getOrderById(orderId: string) {
@@ -172,28 +156,19 @@ export const orderService = {
 
   async updateOrderStatus(
     orderId: string,
-    data: UpdateOrderStatusInput
+    newStatus: OrderStatus
   ) {
-    const order =
-      await orderRepository.getOrderById(orderId);
-
-    if (!order) {
-      throw new Error("Order not found");
-    }
+    const order = await this.getOrderById(orderId);
 
     const currentStatus =
       order.status as OrderStatus;
 
-    const newStatus = data.status;
-
-    // Prevent updating to the same status
     if (currentStatus === newStatus) {
       throw new Error(
         `Order is already ${newStatus}`
       );
     }
 
-    // Check whether the transition is allowed
     const allowedTransitions =
       allowedStatusTransitions[currentStatus];
 
@@ -201,6 +176,11 @@ export const orderService = {
       throw new Error(
         `Cannot change order status from ${currentStatus} to ${newStatus}`
       );
+    }
+
+    // Use the special cancellation flow
+    if (newStatus === "CANCELLED") {
+      return orderRepository.cancelOrder(orderId);
     }
 
     return orderRepository.updateOrderStatus(

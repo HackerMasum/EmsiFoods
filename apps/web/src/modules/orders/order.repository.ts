@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import type { CheckoutInput } from "./order.types";
+import type {
+  CheckoutInput,
+  OrderStatus,
+} from "./order.types";
 
 type CreateOrderData = CheckoutInput & {
   orderNumber: string;
@@ -168,13 +171,7 @@ export const orderRepository = {
 
   async updateOrderStatus(
     orderId: string,
-    status:
-      | "PENDING"
-      | "CONFIRMED"
-      | "PROCESSING"
-      | "SHIPPED"
-      | "DELIVERED"
-      | "CANCELLED"
+    status: OrderStatus
   ) {
     return prisma.order.update({
       where: {
@@ -191,6 +188,60 @@ export const orderRepository = {
         },
         payment: true,
       },
+    });
+  },
+
+  async cancelOrder(orderId: string) {
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: {
+          id: orderId,
+        },
+        include: {
+          items: true,
+          payment: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.status === "CANCELLED") {
+        throw new Error("Order is already cancelled");
+      }
+
+      for (const item of order.items) {
+        await tx.product.update({
+          where: {
+            id: item.productId,
+          },
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      const updatedOrder = await tx.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          status: "CANCELLED",
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          payment: true,
+        },
+      });
+
+      return updatedOrder;
     });
   },
 };
