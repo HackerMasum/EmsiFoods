@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart/cart.service";
+import { requireAuth } from "@/lib/auth";
 
-// GET /api/cart?userId=USER_ID
+// GET /api/cart
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId");
+    const user = requireAuth(request);
 
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId is required",
-        },
-        { status: 400 }
-      );
-    }
-
-    const cart = await cartService.getCart(userId);
+    const cart = await cartService.getCart(user.id);
 
     return NextResponse.json({
       success: true,
@@ -31,7 +22,7 @@ export async function GET(request: NextRequest) {
         success: false,
         message,
       },
-      { status: 400 }
+      { status: 401 }
     );
   }
 }

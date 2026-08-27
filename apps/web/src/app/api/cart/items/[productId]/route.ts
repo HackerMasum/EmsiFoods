@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart/cart.service";
 import type { UpdateCartItemInput } from "@/modules/cart/cart.types";
+import { requireAuth } from "@/lib/auth";
 
 type RouteContext = {
   params: Promise<{
@@ -14,18 +15,8 @@ export async function PATCH(
   { params }: RouteContext
 ) {
   try {
+    const user = requireAuth(request);
     const { productId } = await params;
-    const userId = request.nextUrl.searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId is required",
-        },
-        { status: 400 }
-      );
-    }
 
     const body = (await request.json()) as UpdateCartItemInput;
 
@@ -40,7 +31,7 @@ export async function PATCH(
     }
 
     const cart = await cartService.updateItem(
-      userId,
+      user.id,
       productId,
       {
         quantity: body.quantity,
@@ -72,21 +63,11 @@ export async function DELETE(
   { params }: RouteContext
 ) {
   try {
+    const user = requireAuth(request);
     const { productId } = await params;
-    const userId = request.nextUrl.searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId is required",
-        },
-        { status: 400 }
-      );
-    }
 
     const cart = await cartService.removeItem(
-      userId,
+      user.id,
       productId
     );
 

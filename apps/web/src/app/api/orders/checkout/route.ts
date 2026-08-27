@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders/order.service";
+import { requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-error";
 import type { CheckoutInput } from "@/modules/orders/order.types";
 
 // POST /api/orders/checkout
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as CheckoutInput;
+    const user = requireAuth(request);
+
+    const body =
+      (await request.json()) as Omit<
+        CheckoutInput,
+        "userId"
+      >;
 
     const {
-      userId,
       customerName,
       phone,
       address,
@@ -16,19 +23,19 @@ export async function POST(request: NextRequest) {
       paymentMethod,
     } = body;
 
-    if (!userId || !customerName || !phone || !address) {
+    if (!customerName || !phone || !address) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "userId, customerName, phone and address are required",
+            "customerName, phone and address are required",
         },
         { status: 400 }
       );
     }
 
     const order = await orderService.checkout({
-      userId,
+      userId: user.id,
       customerName,
       phone,
       address,
@@ -45,15 +52,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
-
-    return NextResponse.json(
-      {
-        success: false,
-        message,
-      },
-      { status: 400 }
-    );
+    return handleApiError(error);
   }
 }

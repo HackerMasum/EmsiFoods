@@ -1,26 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart/cart.service";
 import type { AddCartItemInput } from "@/modules/cart/cart.types";
+import { requireAuth } from "@/lib/auth";
 
 // POST /api/cart/items
 export async function POST(request: NextRequest) {
   try {
+    const user = requireAuth(request);
+
     const body = (await request.json()) as AddCartItemInput;
 
-    const { userId, productId, quantity } = body;
+    const { productId, quantity } = body;
 
-    if (!userId || !productId || quantity === undefined) {
+    if (!productId || quantity === undefined) {
       return NextResponse.json(
         {
           success: false,
-          message: "userId, productId and quantity are required",
+          message: "productId and quantity are required",
         },
         { status: 400 }
       );
     }
 
     const cart = await cartService.addItem({
-      userId,
+      userId: user.id,
       productId,
       quantity,
     });
