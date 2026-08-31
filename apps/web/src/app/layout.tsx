@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Navbar } from "@/components/layout/navbar";
 
 export const metadata: Metadata = {
-  title: "EmsiFoods",
-  description: "EmsiFoods - Fresh food delivered to your door",
+  title: {
+    default: "EmsiFoods",
+    template: "%s | EmsiFoods",
+  },
+  description:
+    "Authentic Bangladeshi foods delivered to your doorstep.",
 };
 
 export default function RootLayout({
@@ -12,8 +17,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }
