@@ -44,12 +44,10 @@ export async function getCustomerOrders(
   const body =
     (await response.json()) as ApiSuccessResponse<OrdersResponseData>;
 
-  // Customer response: data is directly an array
   if (Array.isArray(body.data)) {
     return body.data;
   }
 
-  // Admin/paginated response: data contains { orders: [...] }
   if (
     body.data &&
     "orders" in body.data &&
@@ -70,6 +68,31 @@ export async function getCustomerOrderById(
   const response = await fetch(
     `/api/orders/${orderId}`,
     {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  const body =
+    (await response.json()) as ApiSuccessResponse<CustomerOrder>;
+
+  return body.data;
+}
+
+export async function cancelCustomerOrder(
+  orderId: string,
+  token: string
+): Promise<CustomerOrder> {
+  const response = await fetch(
+    `/api/orders/${orderId}/cancel`,
+    {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
