@@ -45,6 +45,9 @@ export function Navbar() {
   const [isDarkMode, setIsDarkMode] =
     useState(false);
 
+  const [isLoggedIn, setIsLoggedIn] =
+    useState(false);
+
   useEffect(() => {
     const savedTheme =
       localStorage.getItem("theme");
@@ -53,6 +56,11 @@ export function Navbar() {
       setIsDarkMode(true);
       document.documentElement.classList.add("dark");
     }
+
+    const token =
+      localStorage.getItem("token");
+
+    setIsLoggedIn(Boolean(token));
   }, []);
 
   useEffect(() => {
@@ -103,6 +111,11 @@ export function Navbar() {
     const interval = window.setInterval(
       () => {
         void fetchCart();
+
+        const token =
+          localStorage.getItem("token");
+
+        setIsLoggedIn(Boolean(token));
       },
       5000
     );
@@ -125,6 +138,12 @@ export function Navbar() {
       localStorage.setItem("theme", "light");
     }
   }
+
+  const accountHref =
+    isLoggedIn ? "/profile" : "/login";
+
+  const accountLabel =
+    isLoggedIn ? "My Account" : "Account";
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md print:hidden">
@@ -223,11 +242,11 @@ export function Navbar() {
 
             {/* Account */}
             <Link
-              href="/login"
+              href={accountHref}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
             >
               <User className="h-4 w-4" />
-              Account
+              {accountLabel}
             </Link>
           </div>
 
@@ -302,14 +321,14 @@ export function Navbar() {
               ))}
 
               <Link
-                href="/login"
+                href={accountHref}
                 onClick={() =>
                   setIsMobileMenuOpen(false)
                 }
                 className="mt-2 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 <User className="h-4 w-4" />
-                Account
+                {accountLabel}
               </Link>
 
               <div className="mt-2 flex items-center gap-2 border-t border-slate-100 pt-3">
