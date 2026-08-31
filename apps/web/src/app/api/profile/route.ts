@@ -5,6 +5,7 @@ import { profileService } from "@/modules/profile/profile.service";
 import type { UpdateProfileInput } from "@/modules/profile/profile.types";
 
 // GET /api/profile
+// Authenticated user -> own profile
 export async function GET(request: NextRequest) {
   try {
     const user = requireAuth(request);
@@ -17,11 +18,15 @@ export async function GET(request: NextRequest) {
       data: profile,
     });
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(
+      error,
+      "Failed to fetch profile"
+    );
   }
 }
 
 // PATCH /api/profile
+// Authenticated user -> update own profile
 export async function PATCH(request: NextRequest) {
   try {
     const user = requireAuth(request);
@@ -41,6 +46,9 @@ export async function PATCH(request: NextRequest) {
       data: profile,
     });
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(
+      error,
+      "Failed to update profile"
+    );
   }
 }

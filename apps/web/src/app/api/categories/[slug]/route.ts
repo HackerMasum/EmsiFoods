@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { categoryService } from "@/modules/categories/category.service";
+import {
+  AuthenticationError,
+  AuthorizationError,
+  requireAdmin,
+} from "@/lib/auth";
 
 type RouteContext = {
   params: Promise<{
@@ -8,6 +13,7 @@ type RouteContext = {
 };
 
 // GET /api/categories/[slug]
+// Public: anyone can view a category
 export async function GET(
   _request: NextRequest,
   { params }: RouteContext
@@ -15,7 +21,8 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const category = await categoryService.getCategoryBySlug(slug);
+    const category =
+      await categoryService.getCategoryBySlug(slug);
 
     return NextResponse.json({
       success: true,
@@ -23,7 +30,9 @@ export async function GET(
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Something went wrong";
+      error instanceof Error
+        ? error.message
+        : "Something went wrong";
 
     return NextResponse.json(
       {
@@ -36,24 +45,54 @@ export async function GET(
 }
 
 // PATCH /api/categories/[slug]
+// ADMIN only
 export async function PATCH(
   request: NextRequest,
   { params }: RouteContext
 ) {
   try {
+    requireAdmin(request);
+
     const { slug } = await params;
     const body = await request.json();
 
-    const category = await categoryService.updateCategory(slug, body);
+    const category =
+      await categoryService.updateCategory(
+        slug,
+        body
+      );
 
     return NextResponse.json({
       success: true,
-      message: "Category updated successfully",
+      message:
+        "Category updated successfully",
       data: category,
     });
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 401 }
+      );
+    }
+
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 403 }
+      );
+    }
+
     const message =
-      error instanceof Error ? error.message : "Something went wrong";
+      error instanceof Error
+        ? error.message
+        : "Something went wrong";
 
     return NextResponse.json(
       {
@@ -66,29 +105,55 @@ export async function PATCH(
 }
 
 // DELETE /api/categories/[slug]
+// ADMIN only
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: RouteContext
 ) {
   try {
+    requireAdmin(request);
+
     const { slug } = await params;
 
     await categoryService.deleteCategory(slug);
 
     return NextResponse.json({
       success: true,
-      message: "Category deleted successfully",
+      message:
+        "Category deleted successfully",
     });
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 401 }
+      );
+    }
+
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 403 }
+      );
+    }
+
     const message =
-      error instanceof Error ? error.message : "Something went wrong";
+      error instanceof Error
+        ? error.message
+        : "Something went wrong";
 
     return NextResponse.json(
       {
         success: false,
         message,
       },
-      { status: 404 }
+      { status: 400 }
     );
   }
 }

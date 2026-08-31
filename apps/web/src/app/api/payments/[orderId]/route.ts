@@ -4,7 +4,11 @@ import type {
   PaymentStatus,
   UpdatePaymentStatusInput,
 } from "@/modules/payments/payment.types";
-import { requireAuth } from "@/lib/auth";
+import {
+  AuthorizationError,
+  requireAdmin,
+  requireAuth,
+} from "@/lib/auth";
 import { handleApiError } from "@/lib/api-error";
 
 type RouteContext = {
@@ -22,24 +26,20 @@ export async function GET(
 ) {
   try {
     const user = requireAuth(request);
+
     const { orderId } = await context.params;
 
     const payment =
       await paymentService.getPaymentByOrderId(orderId);
 
-    // Customers can only view payments
-    // that belong to their own orders
+    // Non-admin users can only view payments
+    // that belong to their own orders.
     if (
       user.role !== "ADMIN" &&
       payment.order.userId !== user.id
     ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "You are not authorized to view this payment",
-        },
-        { status: 403 }
+      throw new AuthorizationError(
+        "You are not authorized to view this payment"
       );
     }
 
@@ -62,18 +62,7 @@ export async function PATCH(
   context: RouteContext
 ) {
   try {
-    const user = requireAuth(request);
-
-    if (user.role !== "ADMIN") {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Only administrators can update payment status",
-        },
-        { status: 403 }
-      );
-    }
+    requireAdmin(request);
 
     const { orderId } = await context.params;
 

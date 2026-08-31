@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart/cart.service";
 import type { UpdateCartItemInput } from "@/modules/cart/cart.types";
 import { requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-error";
 
 type RouteContext = {
   params: Promise<{
@@ -10,6 +11,7 @@ type RouteContext = {
 };
 
 // PATCH /api/cart/items/[productId]
+// Authenticated user -> update own cart item
 export async function PATCH(
   request: NextRequest,
   { params }: RouteContext
@@ -18,7 +20,8 @@ export async function PATCH(
     const user = requireAuth(request);
     const { productId } = await params;
 
-    const body = (await request.json()) as UpdateCartItemInput;
+    const body =
+      (await request.json()) as UpdateCartItemInput;
 
     if (body.quantity === undefined) {
       return NextResponse.json(
@@ -40,24 +43,20 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: "Cart item updated successfully",
+      message:
+        "Cart item updated successfully",
       data: cart,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
-
-    return NextResponse.json(
-      {
-        success: false,
-        message,
-      },
-      { status: 400 }
+    return handleApiError(
+      error,
+      "Failed to update cart item"
     );
   }
 }
 
 // DELETE /api/cart/items/[productId]
+// Authenticated user -> remove own cart item
 export async function DELETE(
   request: NextRequest,
   { params }: RouteContext
@@ -73,19 +72,14 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Product removed from cart successfully",
+      message:
+        "Product removed from cart successfully",
       data: cart,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
-
-    return NextResponse.json(
-      {
-        success: false,
-        message,
-      },
-      { status: 400 }
+    return handleApiError(
+      error,
+      "Failed to remove product from cart"
     );
   }
 }

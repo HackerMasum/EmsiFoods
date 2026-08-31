@@ -9,14 +9,19 @@ export class AuthenticationError extends Error {
 }
 
 export class AuthorizationError extends Error {
-  constructor(message = "You are not authorized to perform this action") {
+  constructor(
+    message = "You are not authorized to perform this action"
+  ) {
     super(message);
     this.name = "AuthorizationError";
   }
 }
 
-export function requireAuth(request: NextRequest): JwtPayload {
-  const authorization = request.headers.get("authorization");
+export function requireAuth(
+  request: NextRequest
+): JwtPayload {
+  const authorization =
+    request.headers.get("authorization");
 
   if (!authorization) {
     throw new AuthenticationError(
@@ -24,7 +29,8 @@ export function requireAuth(request: NextRequest): JwtPayload {
     );
   }
 
-  const [type, token] = authorization.split(" ");
+  const [type, token] =
+    authorization.split(" ");
 
   if (type !== "Bearer" || !token) {
     throw new AuthenticationError(
@@ -39,4 +45,18 @@ export function requireAuth(request: NextRequest): JwtPayload {
       "Invalid or expired token"
     );
   }
+}
+
+export function requireAdmin(
+  request: NextRequest
+): JwtPayload {
+  const user = requireAuth(request);
+
+  if (user.role !== "ADMIN") {
+    throw new AuthorizationError(
+      "Admin access is required"
+    );
+  }
+
+  return user;
 }

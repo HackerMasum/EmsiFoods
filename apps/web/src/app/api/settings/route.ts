@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storeSettingsService } from "@/modules/store-settings/store-settings.service";
-import { requireAuth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-error";
 import type { UpdateStoreSettingsInput } from "@/modules/store-settings/store-settings.types";
 
@@ -29,18 +29,7 @@ export async function PATCH(
   request: NextRequest
 ) {
   try {
-    const user = requireAuth(request);
-
-    if (user.role !== "ADMIN") {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Only administrators can update store settings",
-        },
-        { status: 403 }
-      );
-    }
+    requireAdmin(request);
 
     const body =
       (await request.json()) as UpdateStoreSettingsInput;

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart/cart.service";
 import { requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-error";
 
 // GET /api/cart
+// Authenticated user -> own cart
 export async function GET(request: NextRequest) {
   try {
     const user = requireAuth(request);
@@ -14,15 +16,9 @@ export async function GET(request: NextRequest) {
       data: cart,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
-
-    return NextResponse.json(
-      {
-        success: false,
-        message,
-      },
-      { status: 401 }
+    return handleApiError(
+      error,
+      "Failed to fetch cart"
     );
   }
 }

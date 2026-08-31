@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart/cart.service";
 import type { AddCartItemInput } from "@/modules/cart/cart.types";
 import { requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-error";
 
 // POST /api/cart/items
+// Authenticated user -> add item to own cart
 export async function POST(request: NextRequest) {
   try {
     const user = requireAuth(request);
 
-    const body = (await request.json()) as AddCartItemInput;
+    const body =
+      (await request.json()) as AddCartItemInput;
 
     const { productId, quantity } = body;
 
@@ -16,7 +19,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "productId and quantity are required",
+          message:
+            "productId and quantity are required",
         },
         { status: 400 }
       );
@@ -31,21 +35,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Product added to cart successfully",
+        message:
+          "Product added to cart successfully",
         data: cart,
       },
       { status: 201 }
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong";
-
-    return NextResponse.json(
-      {
-        success: false,
-        message,
-      },
-      { status: 400 }
+    return handleApiError(
+      error,
+      "Failed to add product to cart"
     );
   }
 }
