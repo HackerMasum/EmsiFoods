@@ -135,11 +135,7 @@ model Cart {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     CartItem[]
 }
 
@@ -152,15 +148,8 @@ model CartItem {
   cartId    String
   productId String
 
-  cart      Cart     @relation(
-    fields: [cartId],
-    references: [id],
-    onDelete: Cascade
-  )
-  product   Product  @relation(
-    fields: [productId],
-    references: [id]
-  )
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
 
   @@unique([cartId, productId])
 }
@@ -183,10 +172,7 @@ model Order {
   updatedAt     DateTime    @updatedAt
 
   userId        String
-  user          User        @relation(
-    fields: [userId],
-    references: [id]
-  )
+  user          User        @relation(fields: [userId], references: [id])
 
   items         OrderItem[]
   payment       Payment?
@@ -200,15 +186,8 @@ model OrderItem {
   orderId     String
   productId   String
 
-  order       Order    @relation(
-    fields: [orderId],
-    references: [id],
-    onDelete: Cascade
-  )
-  product     Product  @relation(
-    fields: [productId],
-    references: [id]
-  )
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
 }
 
 model Payment {
@@ -221,11 +200,7 @@ model Payment {
   updatedAt     DateTime      @updatedAt
 
   orderId       String        @unique
-  order         Order         @relation(
-    fields: [orderId],
-    references: [id],
-    onDelete: Cascade
-  )
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model StoreSettings {
