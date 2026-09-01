@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Navbar } from "@/components/layout/navbar";
 
 export const metadata: Metadata = {
   title: {
@@ -8,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s | EmsiFoods",
   },
   description:
-    "Authentic Bangladeshi foods delivered to your doorstep.",
+    "Modular commerce platform for modern businesses.",
 };
 
 export default function RootLayout({
@@ -18,10 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
-        <Navbar />
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
