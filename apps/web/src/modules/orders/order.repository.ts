@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+
 import type {
   CheckoutInput,
   GetOrdersQuery,
@@ -10,6 +11,7 @@ type CreateOrderData = CheckoutInput & {
   subtotal: number;
   discount: number;
   total: number;
+
   items: {
     productId: string;
     quantity: number;
@@ -20,7 +22,9 @@ type CreateOrderData = CheckoutInput & {
 export const orderRepository = {
   async findCartByUserId(userId: string) {
     return prisma.cart.findUnique({
-      where: { userId },
+      where: {
+        userId,
+      },
       include: {
         items: {
           include: {
@@ -33,7 +37,9 @@ export const orderRepository = {
 
   async findCouponByCode(code: string) {
     return prisma.coupon.findUnique({
-      where: { code },
+      where: {
+        code,
+      },
     });
   },
 
@@ -46,13 +52,17 @@ export const orderRepository = {
       const order = await tx.order.create({
         data: {
           orderNumber: data.orderNumber,
+
           subtotal: data.subtotal,
           discount: data.discount,
           total: data.total,
+
           couponCode: data.couponCode,
+
           customerName: data.customerName,
           phone: data.phone,
           address: data.address,
+
           userId: data.userId,
 
           items: {
@@ -70,6 +80,7 @@ export const orderRepository = {
             },
           },
         },
+
         include: {
           items: {
             include: {
@@ -121,6 +132,7 @@ export const orderRepository = {
       where: {
         id: orderId,
       },
+
       include: {
         items: {
           include: {
@@ -137,6 +149,7 @@ export const orderRepository = {
       where: {
         userId,
       },
+
       include: {
         items: {
           include: {
@@ -145,6 +158,7 @@ export const orderRepository = {
         },
         payment: true,
       },
+
       orderBy: {
         createdAt: "desc",
       },
@@ -167,6 +181,7 @@ export const orderRepository = {
             status,
           }
         : {}),
+
       ...(search
         ? {
             OR: [
@@ -196,6 +211,7 @@ export const orderRepository = {
     const [orders, total] = await prisma.$transaction([
       prisma.order.findMany({
         where,
+
         include: {
           items: {
             include: {
@@ -204,12 +220,15 @@ export const orderRepository = {
           },
           payment: true,
         },
+
         orderBy: {
           createdAt: "desc",
         },
+
         skip,
         take: limit,
       }),
+
       prisma.order.count({
         where,
       }),
@@ -232,9 +251,11 @@ export const orderRepository = {
       where: {
         id: orderId,
       },
+
       data: {
         status,
       },
+
       include: {
         items: {
           include: {
@@ -246,12 +267,16 @@ export const orderRepository = {
     });
   },
 
-  async cancelOrder(orderId: string) {
+  async cancelOrder(
+    orderId: string,
+    cancellationReason: string
+  ) {
     return prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: {
           id: orderId,
         },
+
         include: {
           items: true,
         },
@@ -262,7 +287,9 @@ export const orderRepository = {
       }
 
       if (order.status === "CANCELLED") {
-        throw new Error("Order is already cancelled");
+        throw new Error(
+          "Order is already cancelled"
+        );
       }
 
       for (const item of order.items) {
@@ -270,6 +297,7 @@ export const orderRepository = {
           where: {
             id: item.productId,
           },
+
           data: {
             stock: {
               increment: item.quantity,
@@ -282,9 +310,15 @@ export const orderRepository = {
         where: {
           id: orderId,
         },
+
         data: {
           status: "CANCELLED",
+
+          cancellationReason,
+
+          cancelledAt: new Date(),
         },
+
         include: {
           items: {
             include: {

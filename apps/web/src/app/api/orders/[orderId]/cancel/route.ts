@@ -26,6 +26,26 @@ export async function POST(
 
     const { orderId } = await context.params;
 
+    const body = await request.json();
+
+    const reason =
+      typeof body.reason === "string"
+        ? body.reason.trim()
+        : "";
+
+    if (!reason) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Please provide a cancellation reason",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     const order =
       await orderService.getOrderById(orderId);
 
@@ -36,28 +56,10 @@ export async function POST(
       );
     }
 
-    // Customers can only cancel orders that have not
-    // entered processing or shipping.
-    if (
-      order.status !== "PENDING" &&
-      order.status !== "CONFIRMED"
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "This order can no longer be cancelled",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
     const cancelledOrder =
-      await orderService.updateOrderStatus(
+      await orderService.cancelOrder(
         orderId,
-        "CANCELLED"
+        reason
       );
 
     return NextResponse.json({

@@ -1,4 +1,5 @@
 import { orderRepository } from "./order.repository";
+
 import type {
   CheckoutInput,
   GetOrdersQuery,
@@ -99,25 +100,31 @@ export const orderService = {
       }
 
       discount = Math.min(discount, subtotal);
+
       validCouponCode = coupon.code;
     }
 
     const total = subtotal - discount;
+
     const orderNumber = `EMSI-${Date.now()}`;
 
     return orderRepository.checkout(
       cart.id,
       {
         ...data,
+
         orderNumber,
+
         subtotal,
         discount,
         total,
+
         items: cart.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
           price: Number(item.product.price),
         })),
+
         couponCode: validCouponCode,
       },
       validCouponCode
@@ -130,7 +137,9 @@ export const orderService = {
     );
   },
 
-  async getAllOrders(query: GetOrdersQuery = {}) {
+  async getAllOrders(
+    query: GetOrdersQuery = {}
+  ) {
     return orderRepository.getAllOrders(query);
   },
 
@@ -175,12 +184,44 @@ export const orderService = {
     }
 
     if (newStatus === "CANCELLED") {
-      return orderRepository.cancelOrder(orderId);
+      return orderRepository.cancelOrder(
+        orderId,
+        "Cancelled by administrator"
+      );
     }
 
     return orderRepository.updateOrderStatus(
       orderId,
       newStatus
+    );
+  },
+
+  async cancelOrder(
+    orderId: string,
+    cancellationReason: string
+  ) {
+    const order =
+      await orderRepository.getOrderById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    const currentStatus =
+      order.status as OrderStatus;
+
+    if (
+      currentStatus !== "PENDING" &&
+      currentStatus !== "CONFIRMED"
+    ) {
+      throw new Error(
+        "This order can no longer be cancelled"
+      );
+    }
+
+    return orderRepository.cancelOrder(
+      orderId,
+      cancellationReason
     );
   },
 };

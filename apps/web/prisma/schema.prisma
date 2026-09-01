@@ -155,27 +155,32 @@ model CartItem {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  orderNumber   String      @unique
-  status        OrderStatus @default(PENDING)
-  subtotal      Decimal     @db.Decimal(10, 2)
-  discount      Decimal     @default(0) @db.Decimal(10, 2)
-  total         Decimal     @db.Decimal(10, 2)
+  id                 String      @id @default(cuid())
+  orderNumber        String      @unique
+  status             OrderStatus @default(PENDING)
 
-  couponCode    String?
+  subtotal           Decimal     @db.Decimal(10, 2)
+  discount           Decimal     @default(0) @db.Decimal(10, 2)
+  total              Decimal     @db.Decimal(10, 2)
 
-  customerName  String
-  phone         String
-  address       String
+  couponCode         String?
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  customerName       String
+  phone              String
+  address            String
 
-  userId        String
-  user          User        @relation(fields: [userId], references: [id])
+  // Cancellation details
+  cancellationReason String?
+  cancelledAt        DateTime?
 
-  items         OrderItem[]
-  payment       Payment?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  userId             String
+  user               User        @relation(fields: [userId], references: [id])
+
+  items              OrderItem[]
+  payment            Payment?
 }
 
 model OrderItem {
