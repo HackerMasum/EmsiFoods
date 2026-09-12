@@ -87,7 +87,8 @@ export async function getCustomerOrderById(
 
 export async function cancelCustomerOrder(
   orderId: string,
-  token: string
+  token: string,
+  reason: string
 ): Promise<CustomerOrder> {
   const response = await fetch(
     `/api/orders/${orderId}/cancel`,
@@ -95,8 +96,12 @@ export async function cancelCustomerOrder(
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       cache: "no-store",
+      body: JSON.stringify({
+        reason,
+      }),
     }
   );
 

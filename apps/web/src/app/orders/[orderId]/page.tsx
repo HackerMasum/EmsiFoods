@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
   Loader2,
   X,
 } from "lucide-react";
@@ -25,6 +27,17 @@ import type {
 import {
   OrderDetails,
 } from "@/features/customer-orders/components/order-details";
+
+const cancellationReasons = [
+  "I placed the order by mistake",
+  "I found a better price elsewhere",
+  "I no longer need the items",
+  "I ordered the wrong items",
+  "I entered the wrong delivery information",
+  "I need to change my order",
+  "Delivery is taking too long",
+  "Other",
+];
 
 export default function OrderDetailsPage() {
   const params = useParams();
@@ -54,6 +67,12 @@ export default function OrderDetailsPage() {
 
   const [cancelSuccess, setCancelSuccess] =
     useState<string | null>(null);
+
+  const [selectedReason, setSelectedReason] =
+    useState("");
+
+  const [customReason, setCustomReason] =
+    useState("");
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -101,10 +120,46 @@ export default function OrderDetailsPage() {
     };
   }, [orderId, fetchOrder]);
 
+  const resetCancelForm = () => {
+    setSelectedReason("");
+    setCustomReason("");
+    setCancelError(null);
+  };
+
+  const openCancelModal = () => {
+    resetCancelForm();
+    setShowCancelModal(true);
+  };
+
+  const closeCancelModal = () => {
+    if (isCancelling) {
+      return;
+    }
+
+    setShowCancelModal(false);
+    resetCancelForm();
+  };
+
   const handleCancelOrder = async () => {
+    const finalReason =
+      selectedReason === "Other"
+        ? customReason.trim()
+        : selectedReason.trim();
+
+    if (!finalReason) {
+      setCancelError(
+        selectedReason === "Other"
+          ? "Please enter a cancellation reason."
+          : "Please select a cancellation reason."
+      );
+
+      return;
+    }
+
     try {
       setIsCancelling(true);
       setCancelError(null);
+      setCancelSuccess(null);
 
       const token =
         localStorage.getItem("token");
@@ -118,12 +173,15 @@ export default function OrderDetailsPage() {
       const cancelledOrder =
         await cancelCustomerOrder(
           orderId,
-          token
+          token,
+          finalReason
         );
 
       setOrder(cancelledOrder);
 
       setShowCancelModal(false);
+
+      resetCancelForm();
 
       setCancelSuccess(
         "Your order has been cancelled successfully."
@@ -142,6 +200,11 @@ export default function OrderDetailsPage() {
   const canCancelOrder =
     order?.status === "PENDING" ||
     order?.status === "CONFIRMED";
+
+  const finalReason =
+    selectedReason === "Other"
+      ? customReason.trim()
+      : selectedReason.trim();
 
   if (isLoading) {
     return (
@@ -241,6 +304,7 @@ export default function OrderDetailsPage() {
       <main className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl space-y-8">
 
+          {/* Page header */}
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <Link
@@ -278,10 +342,7 @@ export default function OrderDetailsPage() {
               {canCancelOrder && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setCancelError(null);
-                    setShowCancelModal(true);
-                  }}
+                  onClick={openCancelModal}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                 >
                   <X className="h-4 w-4" />
@@ -291,19 +352,73 @@ export default function OrderDetailsPage() {
             </div>
           </div>
 
+          {/* Success message */}
           {cancelSuccess && (
-            <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-medium text-green-700">
-              {cancelSuccess}
+            <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-medium text-green-700">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+
+              <div>
+                <p className="font-semibold">
+                  Order cancelled
+                </p>
+
+                <p className="mt-1 font-normal text-green-600">
+                  {cancelSuccess}
+                </p>
+              </div>
             </div>
+          )}
+
+          {/* Cancelled order information */}
+          {order.status === "CANCELLED" && (
+            <section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+                  <X className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <h2 className="font-bold text-red-950">
+                    This order has been cancelled
+                  </h2>
+
+                  {order.cancellationReason && (
+                    <p className="mt-1 text-sm leading-6 text-red-700">
+                      <span className="font-semibold">
+                        Reason:
+                      </span>{" "}
+                      {order.cancellationReason}
+                    </p>
+                  )}
+
+                  {order.cancelledAt && (
+                    <p className="mt-1 text-xs text-red-600">
+                      Cancelled on{" "}
+                      {new Date(
+                        order.cancelledAt
+                      ).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
           )}
 
           <OrderDetails order={order} />
         </div>
       </main>
 
+      {/* Cancellation modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-order-title"
+        >
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
+
+            {/* Modal header */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
                 <AlertTriangle className="h-6 w-6" />
@@ -311,43 +426,117 @@ export default function OrderDetailsPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  if (!isCancelling) {
-                    setShowCancelModal(false);
-                  }
-                }}
-                className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Close"
+                onClick={closeCancelModal}
+                disabled={isCancelling}
+                className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close cancellation dialog"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <h2 className="mt-5 text-xl font-bold text-gray-950">
+            <h2
+              id="cancel-order-title"
+              className="mt-5 text-xl font-bold text-gray-950"
+            >
               Cancel this order?
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-gray-500">
-              Are you sure you want to cancel order{" "}
+              You are about to cancel order{" "}
               <span className="font-semibold text-gray-900">
                 {order.orderNumber}
               </span>
-              ? This action cannot be undone.
+              . Please tell us why you want to cancel it.
             </p>
 
-            {cancelError && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {cancelError}
+            {/* Cancellation reason */}
+            <div className="mt-6">
+              <label
+                htmlFor="cancellation-reason"
+                className="block text-sm font-semibold text-gray-900"
+              >
+                Cancellation reason
+              </label>
+
+              <div className="relative mt-2">
+                <select
+                  id="cancellation-reason"
+                  value={selectedReason}
+                  onChange={(event) => {
+                    setSelectedReason(event.target.value);
+                    setCancelError(null);
+                  }}
+                  disabled={isCancelling}
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+                >
+                  <option value="">
+                    Select a reason
+                  </option>
+
+                  {cancellationReasons.map(
+                    (reason) => (
+                      <option
+                        key={reason}
+                        value={reason}
+                      >
+                        {reason}
+                      </option>
+                    )
+                  )}
+                </select>
+
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Custom reason */}
+            {selectedReason === "Other" && (
+              <div className="mt-4">
+                <label
+                  htmlFor="custom-cancellation-reason"
+                  className="block text-sm font-semibold text-gray-900"
+                >
+                  Tell us more
+                </label>
+
+                <textarea
+                  id="custom-cancellation-reason"
+                  value={customReason}
+                  onChange={(event) => {
+                    setCustomReason(event.target.value);
+                    setCancelError(null);
+                  }}
+                  disabled={isCancelling}
+                  rows={4}
+                  maxLength={500}
+                  placeholder="Please enter your cancellation reason..."
+                  className="mt-2 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+                />
+
+                <div className="mt-1 flex justify-end">
+                  <span className="text-xs text-gray-400">
+                    {customReason.length}/500
+                  </span>
+                </div>
               </div>
             )}
 
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            {/* Error */}
+            {cancelError && (
+              <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+
+                <p>{cancelError}</p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 disabled={isCancelling}
-                onClick={() => {
-                  setShowCancelModal(false);
-                }}
+                onClick={closeCancelModal}
                 className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Keep Order
@@ -355,11 +544,14 @@ export default function OrderDetailsPage() {
 
               <button
                 type="button"
-                disabled={isCancelling}
+                disabled={
+                  isCancelling ||
+                  !finalReason
+                }
                 onClick={() => {
                   void handleCancelOrder();
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCancelling && (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -370,6 +562,10 @@ export default function OrderDetailsPage() {
                   : "Yes, Cancel Order"}
               </button>
             </div>
+
+            <p className="mt-4 text-center text-xs leading-5 text-gray-400">
+              This action cannot be undone.
+            </p>
           </div>
         </div>
       )}
