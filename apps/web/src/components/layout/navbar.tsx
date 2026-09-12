@@ -71,8 +71,11 @@ export function Navbar() {
 
         if (!token) {
           setCartCount(0);
+          setIsLoggedIn(false);
           return;
         }
+
+        setIsLoggedIn(true);
 
         const response = await fetch(
           "/api/cart",
@@ -108,19 +111,28 @@ export function Navbar() {
 
     void fetchCart();
 
+    function handleCartUpdated() {
+      void fetchCart();
+    }
+
+    window.addEventListener(
+      "cartUpdated",
+      handleCartUpdated
+    );
+
     const interval = window.setInterval(
       () => {
         void fetchCart();
-
-        const token =
-          localStorage.getItem("token");
-
-        setIsLoggedIn(Boolean(token));
       },
       5000
     );
 
     return () => {
+      window.removeEventListener(
+        "cartUpdated",
+        handleCartUpdated
+      );
+
       window.clearInterval(interval);
     };
   }, []);
