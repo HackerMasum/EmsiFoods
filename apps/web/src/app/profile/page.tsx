@@ -21,7 +21,11 @@ import type {
   UserProfile,
 } from "@/features/profile/profile.types";
 
+import { useTranslation } from "@/i18n/useTranslation";
+
 export default function ProfilePage() {
+  const { dictionary: t } = useTranslation();
+
   const [profile, setProfile] =
     useState<UserProfile | null>(null);
 
@@ -105,9 +109,7 @@ export default function ProfilePage() {
 
       setProfile(updatedProfile);
 
-      setSuccessMessage(
-        "Profile updated successfully"
-      );
+      setSuccessMessage(t.profile.updated);
 
       window.setTimeout(() => {
         setSuccessMessage(null);
@@ -130,8 +132,9 @@ export default function ProfilePage() {
         <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-24">
           <div className="flex items-center gap-3 text-slate-600">
             <Loader2 className="h-6 w-6 animate-spin" />
+
             <span className="font-medium">
-              Loading profile...
+              {t.profile.loading}
             </span>
           </div>
         </div>
@@ -145,7 +148,7 @@ export default function ProfilePage() {
         <div className="mx-auto max-w-2xl px-4 py-16">
           <div className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
             <h1 className="text-xl font-bold text-slate-900">
-              Unable to load profile
+              {t.profile.unableToLoad}
             </h1>
 
             <p className="mt-3 text-sm text-red-600">
@@ -157,7 +160,7 @@ export default function ProfilePage() {
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Home
+              {t.common.backToHome}
             </Link>
           </div>
         </div>
@@ -173,7 +176,7 @@ export default function ProfilePage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-blue-600"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Home
+          {t.common.backToHome}
         </Link>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -185,7 +188,7 @@ export default function ProfilePage() {
               </div>
 
               <h1 className="mt-4 text-xl font-bold text-slate-900">
-                {profile?.name || "EmsiFoods Customer"}
+                {profile?.name || t.profile.customer}
               </h1>
 
               <p className="mt-1 text-sm text-slate-500">
@@ -203,7 +206,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
               >
                 <Package className="h-5 w-5" />
-                My Orders
+                {t.profile.myOrders}
               </Link>
             </div>
           </aside>
@@ -212,12 +215,11 @@ export default function ProfilePage() {
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                Profile Information
+                {t.profile.title}
               </h2>
 
               <p className="mt-2 text-sm text-slate-500">
-                Update your personal information and
-                contact details.
+                {t.profile.description}
               </p>
             </div>
 
@@ -243,7 +245,7 @@ export default function ProfilePage() {
                   htmlFor="name"
                   className="mb-2 block text-sm font-semibold text-slate-700"
                 >
-                  Full Name
+                  {t.profile.fullName}
                 </label>
 
                 <input
@@ -253,7 +255,9 @@ export default function ProfilePage() {
                   onChange={(event) =>
                     setName(event.target.value)
                   }
-                  placeholder="Enter your full name"
+                  placeholder={
+                    t.profile.fullNamePlaceholder
+                  }
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
@@ -263,7 +267,7 @@ export default function ProfilePage() {
                   htmlFor="email"
                   className="mb-2 block text-sm font-semibold text-slate-700"
                 >
-                  Email Address
+                  {t.profile.email}
                 </label>
 
                 <input
@@ -275,7 +279,7 @@ export default function ProfilePage() {
                 />
 
                 <p className="mt-2 text-xs text-slate-400">
-                  Email address cannot currently be changed.
+                  {t.profile.emailCannotChange}
                 </p>
               </div>
 
@@ -284,7 +288,7 @@ export default function ProfilePage() {
                   htmlFor="phone"
                   className="mb-2 block text-sm font-semibold text-slate-700"
                 >
-                  Phone Number
+                  {t.profile.phone}
                 </label>
 
                 <input
@@ -294,7 +298,9 @@ export default function ProfilePage() {
                   onChange={(event) =>
                     setPhone(event.target.value)
                   }
-                  placeholder="Enter your phone number"
+                  placeholder={
+                    t.profile.phonePlaceholder
+                  }
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
@@ -304,7 +310,7 @@ export default function ProfilePage() {
                   htmlFor="address"
                   className="mb-2 block text-sm font-semibold text-slate-700"
                 >
-                  Delivery Address
+                  {t.profile.address}
                 </label>
 
                 <textarea
@@ -314,7 +320,9 @@ export default function ProfilePage() {
                   onChange={(event) =>
                     setAddress(event.target.value)
                   }
-                  placeholder="Enter your delivery address"
+                  placeholder={
+                    t.profile.addressPlaceholder
+                  }
                   className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
@@ -325,7 +333,7 @@ export default function ProfilePage() {
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                   <Package className="h-4 w-4" />
-                  View Orders
+                  {t.profile.viewOrders}
                 </Link>
 
                 <button
@@ -336,12 +344,12 @@ export default function ProfilePage() {
                   {isSaving ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
+                      {t.profile.saving}
                     </>
                   ) : (
                     <>
                       <Save className="h-4 w-4" />
-                      Save Changes
+                      {t.profile.saveChanges}
                     </>
                   )}
                 </button>
